@@ -1,0 +1,732 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cross Sell - TruckerTools Opportunity DZ Calculator</title>
+<style>
+  :root{
+    --blue:#2E008B; --lightblue:#5BCBE7; --gold:#FFC72C; --red:#DA291C;
+    --ink:#111319; --muted:#5b6470; --panel:#f7f9fc; --border:#e5eaf1; --bg:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  header{padding:10px 20px;border-bottom:2px solid var(--blue);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  header .brand{display:flex;align-items:center;gap:12px}
+  header img.logo{height:40px}
+  h1{margin:0;font-size:20px;color:var(--blue)}
+  nav{display:flex;gap:8px}
+  .tab{cursor:pointer;padding:8px 12px;border:1px solid var(--border);background:var(--panel);border-radius:999px;color:var(--blue);font-weight:600}
+  .tab.active{border-color:var(--lightblue);background:#eef9ff;color:#0b3a45}
+  main.calculator{display:grid;grid-template-columns:460px 1fr;gap:16px;padding:16px}
+  main.seasonality{display:block; padding:0; width:100vw; margin-left:calc(50% - 50vw);}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px}
+  .inputs{padding:16px}
+  .row{display:grid;grid-template-columns:180px 1fr 120px;gap:10px;align-items:center;margin:12px 0}
+  .row.short{grid-template-columns:180px 1fr}
+  .row label{color:var(--blue);font-weight:600}
+  input[type="number"]{width:100%;padding:8px 10px;background:#fff;color:var(--ink);border:1px solid var(--border);border-radius:8px}
+  input[type="range"]{width:100%}
+  select{width:100%;padding:8px 10px;background:#fff;color:var(--ink);border:1px solid var(--border);border-radius:8px}
+  canvas{width:100%;height:460px;background:#ffffff;border:1px solid var(--border);border-radius:12px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:12px}
+  .kpi{padding:14px;border-radius:12px;background:#ffffff;border:1px solid var(--border)}
+  .kpi h3{font-size:12px;margin:0 0 6px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .kpi .v{font-size:20px;font-weight:700;color:var(--blue)}
+  .outputs-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px}
+  .partner img{height:30px}
+  /* Seasonality dashboard */
+  #chartSeasonality{width:100vw;height:640px;background:#ffffff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0}
+  .controls{text-align:center;justify-content:center;display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 16px}
+  .years-list{max-height:240px;overflow:auto;padding:8px 16px;display:grid;grid-template-columns:repeat(10,1fr);gap:6px;max-width:1200px;margin:0 auto}
+  .years-list label{font-size:12px;color:var(--ink);font-weight:500}
+  .tableWrap{padding:12px 16px;overflow:auto}
+  table{border-collapse:collapse;min-width:780px}
+  th,td{border:1px solid var(--border);padding:6px 8px;text-align:right}
+  th{background:#f4f7fb;color:#334;position:sticky;top:0}
+  td:first-child, th:first-child{text-align:left}
+  .pill{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid var(--lightblue);background:#e9f8fd;color:#055b6a;margin:8px 16px}
+.hidden{display:none !important;}
+.seasonality.hidden{display:none !important;}
+
+  /* Modernized brand styling */
+.chartWrap{padding:20px 16px}
+.chartCard{max-width:1200px;margin:0 auto;background:#fff;border:1px solid var(--border);border-radius:14px;padding:8px;display:flex;justify-content:center}
+#chartSeasonality{max-width:100%;height:640px;border-radius:12px;border:1px solid var(--border);display:block;margin:0 auto}
+
+  .btn{padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--blue);font-weight:600;cursor:pointer;transition:all .15s ease}
+  .btn:hover{transform:none}
+  .btn.primary{background:var(--lightblue);border-color:#cfeef7;color:#083a44}
+  .btn.ghost{background:#fff;border-color:var(--border);color:var(--blue)}
+  select{border-radius:10px}
+  .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#eef9ff;color:#0b3a45;border:1px solid #caedf6;font-weight:600}
+
+  /* Seasonality dashboard tweaks */
+  .years-list{grid-template-columns:repeat(12,1fr)}
+  #chartSeasonality{height:680px}
+  .tableWrap{padding:20px 16px}
+  .tableCard{max-width:1200px;margin:0 auto;background:#fff;border:1px solid var(--border);border-radius:14px}
+  table{border-collapse:separate;border-spacing:0;width:100%}
+  th,td{border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 12px}
+  th:first-child, td:first-child{border-left:1px solid var(--border)}
+  thead th{background:#f1f6ff;color:var(--blue);text-transform:uppercase;letter-spacing:.04em;font-size:12px;position:sticky;top:0}
+  tbody tr:nth-child(even){background:#fafcff}
+  tbody tr:hover{background:#f7fbff}
+  td.stat{font-weight:700;color:var(--blue)}
+
+  @media (max-width: 1100px){
+    .years-list{grid-template-columns:repeat(6,1fr)}
+  }
+.yearsTitle{text-align:center;font-size:18px;color:var(--blue);margin:12px auto;font-weight:700}
+.subgrid{display:grid;grid-template-columns:1fr;gap:12px}
+.subcard{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px}
+.subcard h3{margin:0 0 6px;color:var(--blue);font-size:14px}
+#subsChart{width:100%;height:460px;background:#ffffff;border:1px solid var(--border);border-radius:12px}
+.kpis-subs{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:12px}
+.kpi .muted{color:var(--muted);font-size:12px}
+</style>
+
+</head>
+<body>
+<header>
+  <div class="brand">
+    <img class="logo" src="https://loadlink.ca/wp-content/uploads/new_sticky.png" alt="Loadlink Logo">
+    <h1>Cross Sell - TruckerTools Opportunity DZ Calculator</h1>
+    
+  </div>
+  <nav>
+    <button class="tab active" id="tab-calc">Opportunity Calculator</button>
+      <button class="tab" id="tab-subs">Subscriber Revenue</button>
+    <button class="tab" id="tab-seas">Load Seasonality</button>
+  </nav>
+</header>
+
+<!-- Opportunity Calculator -->
+<main id="screen-calc" class="calculator">
+  <section class="panel inputs">
+    <h2 style="padding:8px 16px;margin:0;color:var(--blue)">Inputs</h2>
+    <div style="margin-bottom:10px;"></div>
+        <div style="margin-bottom:6px;"><img src="https://www.truckertools.com/wp-content/uploads/2025/01/TT-A-DAT-Product_-Logo.png" alt="TruckerTools Logo" style="height:32px; opacity:0.85;"></div>
+        <div class="inputs">
+      <div class="row short">
+        <label>Seasonality model</label>
+        <select id="seasonalitySelect"></select>
+      </div>
+      <div class="row">
+        <label>Tracked loads / month</label>
+        <input id="loadsSlider" type="range" min="0" max="5000" step="10" value="70">
+        <input id="loadsInput" type="number" value="70" step="10">
+      </div>
+      <div class="row">
+        <label>Price per tracked load ($)</label>
+        <input id="priceSlider" type="range" min="0" max="20" step="0.05" value="2.50">
+        <input id="priceInput" type="number" value="2.50" step="0.05">
+      </div>
+      <div class="pill" id="modelNote">Model: <span id="modelName">—</span></div>
+    </div></div>
+  </section>
+  <section class="panel outputs">
+    <div class="outputs-header">
+      <div style="font-weight:700;color:var(--blue)">Results</div>
+      <div class="partner">
+        
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><h3>Annual Revenue (Base)</h3><div class="v" id="kpiRev">—</div></div>
+      <div class="kpi"><h3>Average MRR (Base)</h3><div class="v" id="kpiMRR">—</div></div>
+      <div class="kpi"><h3>Annual Loads (Base)</h3><div class="v" id="kpiLoads">—</div></div>
+      <div class="kpi"><h3>High / Low Scenario</h3><div class="v" id="kpiScen">—</div></div>
+    </div>
+    <canvas id="chart"></canvas>
+  </section>
+</main>
+
+
+
+
+<main id="screen-subs" class="calculator hidden hidden">
+  <section class="panel inputs">
+    <h2 style="padding:8px 16px;margin:0;color:var(--blue)">Subscriber Revenue — Inputs</h2>
+    <div style="margin-bottom:10px;"></div>
+        <div style="margin-bottom:6px;"><img src="https://www.truckertools.com/wp-content/uploads/2025/01/TT-A-DAT-Product_-Logo.png" alt="TruckerTools Logo" style="height:32px; opacity:0.85;"></div>
+        <div class="inputs">
+      <div class="row" style="display:flex;gap:12px;align-items:center;margin:8px 0 16px;"><label style="min-width:160px;color:var(--blue);font-weight:700">Calculation Type</label><select id="subsMode" style="padding:8px 10px;border:1px solid var(--border);border-radius:10px"><option value="straight">Straight</option><option value="realistic">Realistic (ramp-up)</option><option value="loadlink">Loadlink Seasonality</option><option value="rampseason">Ramp + Loadlink Seasonality</option></select></div>
+<div class="subgrid">
+        <div class="subcard">
+          <h3>Key Accounts</h3><div class="muted" style="margin:4px 0 10px">Annual Revenue over $100K ARR</div>
+          <div class="subrow">
+            <label>MRR ($)</label>
+            <input id="kaMrrSlider" type="range" min="0" max="5000" step="10" value="2000">
+            <input id="kaMrr" type="number" value="2000" step="10">
+          </div>
+          <div class="subrow">
+            <label>Bookings / month</label>
+            <input id="kaBookingsSlider" type="range" min="0" max="200" step="1" value="1">
+            <input id="kaBookings" type="number" value="1" step="1">
+          </div>
+        </div>
+        <div class="subcard">
+          <h3>Enterprise</h3><div class="muted" style="margin:4px 0 10px">$20K–$100K ARR</div>
+          <div class="subrow">
+            <label>MRR ($)</label>
+            <input id="entMrrSlider" type="range" min="0" max="5000" step="10" value="700">
+            <input id="entMrr" type="number" value="700" step="10">
+          </div>
+          <div class="subrow">
+            <label>Bookings / month</label>
+            <input id="entBookingsSlider" type="range" min="0" max="200" step="1" value="2">
+            <input id="entBookings" type="number" value="2" step="1">
+          </div>
+        </div>
+        <div class="subcard">
+          <h3>SMB</h3><div class="muted" style="margin:4px 0 10px">Under $20K ARR</div>
+          <div class="subrow">
+            <label>MRR ($)</label>
+            <input id="smbMrrSlider" type="range" min="0" max="1000" step="5" value="300">
+            <input id="smbMrr" type="number" value="300" step="5">
+          </div>
+          <div class="subrow">
+            <label>Bookings / month</label>
+            <input id="smbBookingsSlider" type="range" min="0" max="500" step="1" value="10">
+            <input id="smbBookings" type="number" value="10" step="1">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="panel outputs">
+    <div class="kpis kpis-subs">
+      <div class="kpi"><h3>Monthly New Revenue</h3><div class="v" id="subsKpiMR">$—</div><div class="muted">Sum of MRR × bookings</div></div>
+      <div class="kpi"><h3>ARR Added This Year</h3><div class="v" id="subsKpiARR">$—</div><div class="muted">At year-end run-rate</div></div>
+      <div class="kpi"><h3>Total Revenue by EOD</h3><div class="v" id="subsKpiTot">$—</div><div class="muted">Collected by Dec 31</div></div>
+      <div class="kpi"><h3>EOY MRR</h3><div class="v" id="subsKpiEOY">$—</div><div class="muted">Active MRR at year-end</div></div>
+    </div>
+    <canvas id="subsChart"></canvas>
+    <div class="tableWrap"><div class="tableCard">
+      <table id="subsTable">
+        <thead><tr>
+          <th>Month</th>
+          <th>Subs KA</th><th>Subs ENT</th><th>Subs SMB</th><th>Total Subs</th>
+          <th>Revenue KA</th><th>Revenue ENT</th><th>Revenue SMB</th><th>Total Revenue</th>
+          <th>Monthly New MR</th><th>Active MRR</th><th>Cumulative Revenue</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div></div>
+  </section>
+</main>
+
+
+
+
+<!-- Load Seasonality (Dashboard) -->
+<main id="screen-seas" class="seasonality hidden">
+  <section class="panel" style="border:0;border-radius:0;background:var(--bg)">
+    <div style="font-weight:700;color:var(--blue);padding:12px;display:flex;justify-content:space-between;align-items:center">
+      <span>Load Seasonality</span>
+      <div class="controls">
+        <label>Mode
+          <select id="seasonMode">
+            <option value="raw">Historical Data</option>
+            <option value="normalized">Normalized (mean=1)</option>
+          </select>
+        </label>
+        <label>Highlight year
+          <select id="highlightYear"></select>
+        </label>
+        <label><input type="checkbox" id="showLabels" checked> Show value labels</label>
+        <button id="selectAll" class="btn primary">Select all</button>
+        <button id="selectNone" class="btn ghost">Select none</button>
+      </div>
+    </div>
+    <h2 class="yearsTitle">Select Years</h2>
+<div class="years-list" id="yearsList"></div><div class="tableWrap"><div class="tableCard">
+      <table id="yearTable">
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th>
+            <th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th>
+            <th>Total</th><th>Mean</th><th>Peak Month</th><th>Peak Value</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+<div class="chartWrap"><div class="chartCard">
+<canvas id="chartSeasonality"></canvas>
+</div></div>
+</div>
+  </section>
+</main>
+
+<script>
+// ===== Injected Data =====
+const SEASONALITY_MODELS = {"Balanced (All Years)": [1.0321468087449526, 1.0424073573816697, 1.1898266170110965, 0.9995885684221157, 1.095337745100984, 1.0738419701820001, 0.8916078795938444, 0.9447123318776183, 0.923906551529494, 0.9312235568935664, 0.9373431940566112, 0.9380574192060458], "Optimistic (Top-3)": [1.76562414935344, 1.9148853525317102, 2.170098169594697, 1.6194862782429578, 1.53811517025014, 1.3943714061760357, 1.1128586561908183, 1.1533822534196068, 1.0963650796748663, 1.1288839846428729, 1.3478453386944567, 1.4672368468289558], "Pessimistic (Bottom-3)": [0.484344720459436, 0.4641823616220522, 0.5919503073440476, 0.6813630303840479, 0.7873960422296926, 0.8080929423156473, 0.667854325486882, 0.6925128727227634, 0.7283883946362704, 0.7511529707606532, 0.6518248012636453, 0.6445912917460922], "2002": [0.3820501407368421, 0.3733900690174514, 0.4609549744289536, 0.6481988158082687, 0.8494926165672114, 0.8409810751476591, 0.6944219486105166, 0.7504581510529348, 0.7011989582234817, 0.7688784256956039, 0.6431513030764726, 0.5742407963395881], "2003": [0.537183745261265, 0.5729216458800066, 0.813434998184411, 0.8525462988333803, 0.8857491145040327, 0.8749139550039579, 0.7114324441360756, 0.7160545056700296, 0.7968726110210762, 0.8434884680059478, 0.7137560622165983, 0.7174844244888127], "2004": [0.7175448435938317, 0.785508784352085, 1.0891173045352947, 1.0301256008723636, 1.1068301721566998, 1.1414024875411162, 0.8544469831787699, 0.8881835009437569, 0.8726381687149086, 0.8797273437038052, 0.8193762101779465, 0.7313480916279652], "2005": [0.7249663236603329, 0.6538605894410913, 0.8359260100277357, 0.8117130536913694, 0.9680550403161724, 1.0019753328589256, 0.7928723627762763, 0.9255577523234297, 1.0029370036138114, 0.9912182147028334, 0.9950422405579947, 0.8898122993165608], "2006": [0.7808514783402034, 0.6842186722504322, 0.8055251303523396, 0.763350077586365, 1.0516373197218385, 1.0362279304792832, 0.7536956080968698, 0.8028339627162847, 0.7257417021747434, 0.7198080425693353, 0.6958795595191002, 0.6076399741015523], "2007": [0.6616244444360334, 0.6628580011635048, 0.8703120331716769, 0.8091578290416073, 1.0688265550997456, 1.1012162303153505, 0.8355257334569848, 0.8989909683540314, 0.7873062527264004, 0.9089072539652756, 0.8655666159649759, 0.8183742600197147], "2008": [0.819325860923764, 0.8276737672672232, 1.007916544852461, 1.129497406389663, 1.2055902342356817, 1.1739331406684321, 1.0077931891797138, 0.8358983179379353, 0.7760632642674472, 0.7097432266582527, 0.5477822632666822, 0.5318467243179196], "2009": [0.5338002753802008, 0.4462353699686985, 0.5014609494187783, 0.5433439765104945, 0.6269463956178336, 0.708383796795325, 0.5977085837140533, 0.6110259614453257, 0.6870936146642531, 0.6410920185804082, 0.5985670384978651, 0.6420486544098757], "2010": [0.6542231040712053, 0.695897181758064, 0.9523536253993584, 0.9959560795214071, 1.0813358273013887, 1.123687102457002, 0.9095089275527565, 0.917683128969286, 0.8953985490681097, 0.8048303106446211, 0.8231398169280887, 0.8600508551692826], "2011": [0.8465522201229532, 0.9489525332793303, 1.2868463780981163, 1.1469383880384825, 1.1721709167720447, 1.2034352861566706, 0.9369920679482764, 1.0304025217703674, 1.0040295824295717, 0.9582872850047666, 0.9629773180318668, 0.827306217711691], "2012": [0.8389016509499216, 0.849925620153181, 1.053900518697342, 1.017868074941633, 1.1508580774765906, 1.1257262472513936, 0.891322776942036, 0.8974653859523015, 0.763433153855766, 0.822339263786587, 0.8231901661822713, 0.6954364860822941], "2013": [0.8723914573694144, 0.7577613103721069, 0.9372891285479532, 0.876223035612703, 0.9640145126680264, 0.8925034669526157, 0.8901874012602204, 0.876628347108872, 0.8331618359731162, 0.8873250461599451, 0.8034331188410566, 0.8945979959266078], "2014": [1.2792058787759213, 1.2158463773126578, 1.410189463531706, 1.2374084454163152, 1.2653220719350957, 1.2650375986489646, 1.1127814540010716, 1.0103383439786395, 1.0650679832750216, 1.075492796353509, 0.957431347683664, 1.0633636610209438], "2015": [1.0518412342012777, 0.9671059568748323, 1.09010918484269, 0.9501609153797104, 0.983789182248205, 1.003855877502642, 0.7518754825581723, 0.7488922892478589, 0.8017967680801251, 0.7515784219584954, 0.6937422336790529, 0.6808956214743869], "2016": [0.7605607289046542, 0.7687097556940925, 0.901979196589763, 0.7913316755982917, 0.9615851611537206, 0.9451561995139695, 0.7534363094378299, 0.840132690214684, 0.8806713922197272, 0.81243053056347, 0.8625431432513165, 0.9851460946484235], "2017": [1.0845481097182323, 1.0291160983260044, 1.364469823271283, 1.0819526056651243, 1.2605162356233757, 1.3683668555450088, 1.1625542092231862, 1.3034591145156336, 1.231673665364928, 1.2734031272313875, 1.352929774212653, 1.389120818119037], "2018": [1.9637921005818857, 1.787856701691961, 1.8940231390611895, 1.5339126858343737, 1.5494655704513491, 1.5332808026943832, 1.1921746754587534, 1.1337191913528661, 0.9619904726498898, 0.9816015071539752, 0.9393937273727818, 0.8584749235133702], "2019": [1.1232666861845781, 1.1651899926796403, 1.0801299626637177, 0.9013875928531185, 1.0052555867689157, 0.9398947024518978, 0.8580394024646916, 0.8741259891760016, 0.8222738097561496, 0.8580242976884368, 0.9127337972831459, 0.9622497713089296], "2020": [1.084903071960219, 1.061898497724233, 1.2589251991912085, 0.5585469338109016, 0.586641817644739, 0.8355005588298935, 0.8705109127256978, 0.8887247554262188, 0.9928193209858371, 1.0107184808477174, 1.0364872291383231, 0.9116588407063494], "2021": [0.940884065296584, 1.0662814003008199, 1.4214248996025318, 1.2279251633910406, 1.2779647696603225, 1.2802330035612444, 1.1370523119797478, 1.1863593366006742, 1.2641313120736795, 1.3315917602901077, 1.7548678703515843, 2.102307933763373], "2022": [2.39219628218185, 2.8905179556023493, 3.194846470120369, 2.096620985503459, 1.7869151706387483, 1.36960041227248, 1.0093489811339533, 1.1400682323052798, 1.0629734543010294, 1.073458686484536, 1.3492744183590033, 1.4409276832101248], "2023": [1.7647816385001194, 1.613295837441219, 1.5116683853365434, 0.9243997194772321, 1.124205699775082, 1.0879617891518063, 0.8675503765797665, 0.920777090638801, 0.9570058964858219, 0.9998002450782413, 1.096017669821007, 0.9464174483312412], "2024": [1.3906715751478582, 1.2370660704878742, 1.1703860357112748, 1.1149515068563376, 1.3260986566587964, 1.0553128152771614, 0.9709148779537387, 1.2125585710145403, 1.0247206084358718, 0.982862755971247, 0.9861958765981287, 1.1198706289899683], "2025": [1.5654564935797126, 1.9556883881212115, 1.642649452629619, 0.9466087754971347, 1.0288391774280006, 0.8636206172908221, 0.8364420898831063, 1.2627578563470867, 1.2627578563470867, 1.2627578563470867, 1.2627578563470867, 1.2627578563470867]};
+const RAW_SERIES = {"2002": [151760.0, 148320.0, 183103.0, 257481.0, 337440.0, 334059.0, 275842.0, 298101.0, 278534.0, 305418.0, 255476.0, 228103.0], "2003": [213383.0, 227579.0, 323117.0, 338653.0, 351842.0, 347538.0, 282599.0, 284435.0, 316538.0, 335055.0, 283522.0, 285003.0], "2004": [285027.0, 312024.0, 432625.0, 409192.0, 439661.0, 453394.0, 339408.0, 352809.0, 346634.0, 349450.0, 325477.0, 290510.0], "2005": [287975.0, 259730.0, 332051.0, 322433.0, 384536.0, 398010.0, 314949.0, 367655.0, 398392.0, 393737.0, 395256.0, 353456.0], "2006": [310174.0, 271789.0, 319975.0, 303222.0, 417737.0, 411616.0, 299387.0, 318906.0, 288283.0, 285926.0, 276421.0, 241370.0], "2007": [262814.0, 263304.0, 345710.0, 321418.0, 424565.0, 437431.0, 331892.0, 357102.0, 312738.0, 361041.0, 343825.0, 325079.0], "2008": [325457.0, 328773.0, 400370.0, 448665.0, 478891.0, 466316.0, 400321.0, 332040.0, 308272.0, 281928.0, 217593.0, 211263.0], "2009": [212039.0, 177256.0, 199193.0, 215830.0, 249039.0, 281388.0, 237425.0, 242715.0, 272931.0, 254658.0, 237766.0, 255038.0], "2010": [259874.0, 276428.0, 378299.0, 395619.0, 429534.0, 446357.0, 361280.0, 364527.0, 355675.0, 319699.0, 326972.0, 341634.0], "2011": [336272.0, 376948.0, 511168.0, 455593.0, 465616.0, 478035.0, 372197.0, 409302.0, 398826.0, 380656.0, 382519.0, 328627.0], "2012": [333233.0, 337612.0, 418636.0, 404323.0, 457150.0, 447167.0, 354056.0, 356496.0, 303255.0, 326654.0, 326992.0, 276245.0], "2013": [346536.0, 301002.0, 372315.0, 348058.0, 382931.0, 354525.0, 353605.0, 348219.0, 330953.0, 352468.0, 319144.0, 355357.0], "2014": [508133.0, 482965.0, 560163.0, 491530.0, 502618.0, 502505.0, 442025.0, 401332.0, 423072.0, 427213.0, 380316.0, 422395.0], "2015": [417818.0, 384159.0, 433019.0, 377428.0, 390786.0, 398757.0, 298664.0, 297479.0, 318494.0, 298546.0, 275572.0, 270469.0], "2016": [302114.0, 305351.0, 358289.0, 314337.0, 381966.0, 375440.0, 299284.0, 333722.0, 349825.0, 322718.0, 342624.0, 391325.0], "2017": [430810.0, 408791.0, 542002.0, 429779.0, 500709.0, 543550.0, 461796.0, 517767.0, 489252.0, 505828.0, 537418.0, 551794.0], "2018": [780068.0, 710182.0, 752354.0, 609309.0, 615487.0, 609058.0, 473562.0, 450342.0, 382127.0, 389917.0, 373151.0, 341008.0], "2019": [446190.0, 462843.0, 429055.0, 358054.0, 399313.0, 373350.0, 340835.0, 347225.0, 326628.0, 340829.0, 362561.0, 382230.0], "2020": [430951.0, 421813.0, 500077.0, 221869.0, 233029.0, 331882.0, 345789.0, 353024.0, 394373.0, 401483.0, 411719.0, 362134.0], "2021": [373743.0, 423554.0, 564626.0, 487763.0, 507640.0, 508541.0, 451666.0, 471252.0, 502145.0, 528942.0, 697078.0, 835090.0], "2022": [950241.0, 1148187.0, 1269074.0, 832831.0, 709808.0, 544040.0, 400939.0, 452864.0, 422240.0, 426405.0, 535966.0, 572373.0], "2023": [701016.0, 640842.0, 600473.0, 367195.0, 446563.0, 432166.0, 344613.0, 365756.0, 380147.0, 397146.0, 435366.0, 375941.0], "2024": [552410.0, 491394.0, 464907.0, 442887.0, 526760.0, 419197.0, 385672.0, 481659.0, 407045.0, 390418.0, 391742.0, 444841.0], "2025": [621839.0, 776849.0, 652502.0, 376017.0, 408681.0, 343052.0, 332256.0, 501599.4285714286, 501599.4285714286, 501599.4285714286, 501599.4285714286, 501599.4285714286]};
+const YEAR_LABELS = ["2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"];
+const COLORS = { blue:"#2E008B", lightblue:"#5BCBE7", gold:"#FFC72C", red:"#DA291C" };
+const LOADLINK_SEASONALITY = [0.9037,1.2799,1.1731,1.1607,0.8729,1.1902,0.9701,1.0771,1.0128,0.9752,0.9808,0.4036];
+const REALISTIC_RAMP = [0.10,0.20,0.35,0.50,0.65,0.80,0.90,1.00,1.00,1.00,1.00,1.00];
+const PALETTE = ["#2E008B","#FFC72C","#DA291C","#5BCBE7","#7a3ddb","#008b2e","#c77dff","#fb8500","#219ebc","#606c38","#8ecae6","#8338ec","#023047","#ffb703","#3a0ca3"];
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const fmt = n => n.toLocaleString(undefined,{maximumFractionDigits:0});
+
+// ===== Nav =====
+(function(){
+  const tabCalc = document.getElementById("tab-calc");
+  const tabSeas = document.getElementById("tab-seas");
+  const tabSubs = document.getElementById("tab-subs");
+  const screenCalc = document.getElementById("screen-calc");
+  const screenSeas = document.getElementById("screen-seas");
+  const screenSubs = document.getElementById("screen-subs");
+  function setActive(which){
+    [tabCalc,tabSeas,tabSubs].forEach(t=>t.classList.remove("active"));
+    [screenCalc,screenSeas,screenSubs].forEach(s=>s.classList.add("hidden"));
+    if(which===1){ tabCalc.classList.add("active"); screenCalc.classList.remove("hidden"); }
+    else if(which===2){ tabSeas.classList.add("active"); screenSeas.classList.remove("hidden"); if(!window._seasInit){ try{ initSeasonalityControls(); window._seasInit=true; }catch(e){} } drawSeasonality(); renderSeasonalityTable && renderSeasonalityTable(); }
+    else { tabSubs.classList.add("active"); screenSubs.classList.remove("hidden"); bindSubsInputs(); drawSubs(); }
+  }
+  tabCalc.addEventListener("click",()=>setActive(1));
+  tabSeas.addEventListener("click",()=>setActive(2));
+  tabSubs.addEventListener("click",()=>setActive(3));
+})();
+
+// ===== Opportunity Calculator =====
+
+// ---- Ensure live updates for Opportunity Calculator ----
+function bindCalcInputs(){
+  const binds = [
+    ['loadsSlider','loadsInput'],
+    ['priceSlider','priceInput']
+  ];
+  binds.forEach(([sl,id])=>{
+    const s=document.getElementById(sl), n=document.getElementById(id);
+    if(s&&n){
+      ['input','change'].forEach(evt=>s.addEventListener(evt,()=>{ n.value=s.value; runCalc();
+  window.addEventListener('resize', runCalc); }));
+      ['input','change'].forEach(evt=>n.addEventListener(evt,()=>{ s.value=n.value; runCalc();
+  window.addEventListener('resize', runCalc); }));
+    }
+  });
+  const sel = document.getElementById('seasonalitySelect');
+  if(sel){ ['input','change'].forEach(evt=>sel.addEventListener(evt, runCalc)); }
+}
+
+function getFactors(){
+  const sel = document.getElementById("seasonalitySelect");
+  const key = sel.value;
+  return { name: key, factors: (SEASONALITY_MODELS[key] || Object.values(SEASONALITY_MODELS)[0]) };
+}
+function buildSeries(loads, price, factors){
+  const labels = MONTHS;
+  const baseLoads = labels.map((_,i)=>loads*(factors[i]||1));
+  const highLoads = baseLoads.map(v=>v*1.05);
+  const lowLoads = baseLoads.map(v=>v*0.95);
+  return {labels,
+    loads:{base:baseLoads,high:highLoads,low:lowLoads},
+    revenue:{base:baseLoads.map(v=>v*price),high:highLoads.map(v=>v*price),low:lowLoads.map(v=>v*price)}
+  };
+}
+function drawCombined(canvas, series){
+  const ctx = canvas.getContext('2d');
+  let _cw = canvas.clientWidth || (canvas.parentElement ? canvas.parentElement.clientWidth : 0) || 1200;
+let _ch = canvas.clientHeight || 640;
+const W=canvas.width=_cw,H=canvas.height=_ch;
+  ctx.clearRect(0,0,W,H);
+  const pad={l:60,r:40,t:30,b:36};
+  const maxVal = Math.max(...series.revenue.high);
+  const maxLoads = Math.max(...series.loads.high);
+  const yMax=Math.max(maxVal,maxLoads)*1.10, yMin=0;
+  const yRange=yMax-yMin; 
+  const x=i=>pad.l+(W-pad.l-pad.r)*i/(series.labels.length-1);
+  const y=v=>H-pad.b-(H-pad.t-pad.b)*(v-yMin)/yRange;
+  // frame
+  ctx.strokeStyle="#e5eaf1";ctx.lineWidth=1;ctx.strokeRect(pad.l,pad.t,W-pad.l-pad.r,H-pad.t-pad.b);
+  ctx.fillStyle=COLORS.blue;ctx.font="14px system-ui";ctx.textAlign="center";ctx.fillText("Loads (bars) & Revenue (lines)",W/2,20);
+  // bars
+  const bw=(W-pad.l-pad.r)/series.labels.length*0.6;
+  ctx.fillStyle=COLORS.lightblue;
+  series.loads.base.forEach((v,i)=>{
+    const xx=x(i)-bw/2,yy=y(v);
+    ctx.fillRect(xx,yy,bw,H-pad.b-yy);
+    ctx.fillStyle=COLORS.lightblue; ctx.font="12px system-ui"; ctx.textAlign="center";
+    ctx.fillText(Math.round(v).toLocaleString(), xx + bw/2, yy - 4);
+    ctx.fillStyle=COLORS.lightblue;
+  });
+  // lines
+  function drawLine(arr,color,drawLabels=false){
+    ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();
+    arr.forEach((v,i)=>{const xx=x(i),yy=y(v);if(i==0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy);});ctx.stroke();
+    if(drawLabels){
+      ctx.fillStyle=color; ctx.font="12px system-ui"; ctx.textAlign="left";
+      arr.forEach((v,i)=>{const xx=x(i)+4,yy=y(v)-6; ctx.fillText("$"+Math.round(v).toLocaleString(), xx, yy);});
+    }
+  }
+  drawLine(series.revenue.base,COLORS.blue,true);
+  drawLine(series.revenue.high,COLORS.gold,false);
+  drawLine(series.revenue.low,COLORS.red,false);
+  renderSubsTable(s);
+  // x labels
+  ctx.fillStyle="#5b6470";ctx.textAlign="center";ctx.font="12px system-ui";
+  series.labels.forEach((lab,i)=>ctx.fillText(lab,x(i),H-12));
+}
+function readInputs(){
+  const loads=parseFloat(document.getElementById("loadsInput").value)||0;
+  const price=parseFloat(document.getElementById("priceInput").value)||0;
+  return {loads, price};
+}
+function runCalc(){
+  const {loads, price} = readInputs();
+  const {name, factors} = getFactors();
+  document.getElementById("modelName").textContent = name;
+  const s=buildSeries(loads,price,factors);
+  const annRev=s.revenue.base.reduce((a,b)=>a+b,0);
+  const annLoads=s.loads.base.reduce((a,b)=>a+b,0);
+  const high=s.revenue.high.reduce((a,b)=>a+b,0), low=s.revenue.low.reduce((a,b)=>a+b,0);
+  document.getElementById("kpiRev").textContent="$"+fmt(annRev);
+  document.getElementById("kpiMRR").textContent="$"+fmt(annRev/12);
+  document.getElementById("kpiLoads").textContent=fmt(annLoads);
+  document.getElementById("kpiScen").textContent="$"+fmt(low)+" - $"+fmt(high);
+  drawCombined(document.getElementById("chart"),s);
+}
+function initCalc(){
+  bindCalcInputs();
+  // models dropdown
+  const sel = document.getElementById("seasonalitySelect");
+  const keys = Object.keys(SEASONALITY_MODELS);
+  const def = keys.find(k=>k.toLowerCase().includes("balanced")) || keys[0];
+  keys.forEach(k=>{ const opt=document.createElement("option"); opt.value=k; opt.textContent=k; sel.appendChild(opt); });
+  sel.value = def; sel.addEventListener("change", runCalc);
+  // sliders/inputs
+  const loadsSlider=document.getElementById("loadsSlider");
+  const loadsInput=document.getElementById("loadsInput");
+  const priceSlider=document.getElementById("priceSlider");
+  const priceInput=document.getElementById("priceInput");
+  loadsSlider.addEventListener("input",()=>{loadsInput.value=loadsSlider.value; runCalc();
+  window.addEventListener('resize', runCalc);});
+  priceSlider.addEventListener("input",()=>{priceInput.value=priceSlider.value; runCalc();
+  window.addEventListener('resize', runCalc);});
+  loadsInput.addEventListener("input",()=>{loadsSlider.value=loadsInput.value; runCalc();
+  window.addEventListener('resize', runCalc);});
+  priceInput.addEventListener("input",()=>{priceSlider.value=priceInput.value; runCalc();
+  window.addEventListener('resize', runCalc);});
+  runCalc();
+  window.addEventListener('resize', runCalc);
+}
+
+// ===== Seasonality Dashboard =====
+function initSeasonalityControls(){
+  const yearsList = document.getElementById("yearsList");
+  const highlight = document.getElementById("highlightYear");
+  YEAR_LABELS.forEach((y)=>{
+    const id = "y_"+y.replace(/\\W+/g,"_");
+    const wrap = document.createElement("label");
+    wrap.innerHTML = '<input type="checkbox" checked id="'+id+'"> '+y;
+    yearsList.appendChild(wrap);
+    const opt = document.createElement("option"); opt.value=y; opt.textContent=y; highlight.appendChild(opt);
+  });
+  highlight.value = YEAR_LABELS[YEAR_LABELS.length-1]; // latest
+  document.getElementById("selectAll").onclick = ()=>{ YEAR_LABELS.forEach(y=>{document.getElementById("y_"+y.replace(/\\W+/g,"_")).checked=true;}); drawSeasonality(); renderSeasonalityTable(); };
+  document.getElementById("selectNone").onclick = ()=>{ YEAR_LABELS.forEach(y=>{document.getElementById("y_"+y.replace(/\\W+/g,"_")).checked=false;}); drawSeasonality(); renderSeasonalityTable(); };
+  document.getElementById("seasonMode").addEventListener("change", ()=>{ drawSeasonality(); renderSeasonalityTable(); });
+  document.getElementById("highlightYear").addEventListener("change", ()=>{ drawSeasonality(); renderSeasonalityTable(); });
+  document.getElementById("showLabels").addEventListener("change", drawSeasonality);
+  yearsList.addEventListener("change", drawSeasonality);
+  window.addEventListener("resize", drawSeasonality);
+}
+function drawSeasonality(){
+  const canvas=document.getElementById("chartSeasonality");
+  const ctx=canvas.getContext("2d");
+  let _cw = canvas.clientWidth || (canvas.parentElement ? canvas.parentElement.clientWidth : 0) || 1200;
+let _ch = canvas.clientHeight || 640;
+const W=canvas.width=_cw,H=canvas.height=_ch;
+  ctx.clearRect(0,0,W,H);
+  const pad={l:80,r:220,t:40,b:44};
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  const selected = YEAR_LABELS.filter(y=>document.getElementById("y_"+y.replace(/\\W+/g,"_")).checked);
+  const mode = document.getElementById("seasonMode").value;
+  const showLabels = document.getElementById("showLabels").checked;
+  const hi = document.getElementById("highlightYear").value;
+  const series = selected.map(y=>{
+    const arr = RAW_SERIES[y].slice();
+    if(mode==="normalized"){
+      const m = arr.reduce((a,b)=>a+b,0)/arr.length || 1;
+      for(let i=0;i<arr.length;i++){ arr[i]=arr[i]/m; }
+    }
+    return {name:y, arr};
+  });
+  // bounds
+  let maxVal = 0;
+  series.forEach(s=>{ maxVal=Math.max(maxVal, ...s.arr); });
+  if(maxVal===0){ maxVal=1; }
+  const yMax = maxVal*1.15, yMin=0, yRange=yMax-yMin;
+  const x=i=>pad.l+(W-pad.l-pad.r)*i/(MONTHS.length-1);
+  const y=v=>H-pad.b-(H-pad.t-pad.b)*(v-yMin)/yRange;
+  // frame + title
+  ctx.strokeStyle="#e5eaf1";ctx.lineWidth=1;ctx.strokeRect(pad.l,pad.t,W-pad.l-pad.r,H-pad.t-pad.b);
+  ctx.fillStyle=COLORS.blue;ctx.font="16px system-ui";ctx.textAlign="center";ctx.fillText(mode==="normalized"?"Seasonality (mean=1)":"Seasonality (raw monthly totals)",W/2,24);
+  // grid
+  ctx.strokeStyle="#eef2f7";
+  for(let g=1;g<=4;g++){const yy=y(yMin + (yRange*g/5)); ctx.beginPath(); ctx.moveTo(pad.l,yy); ctx.lineTo(W-pad.r,yy); ctx.stroke();}
+  // draw lines
+  series.forEach((s,idx)=>{
+    const color = PALETTE[idx % PALETTE.length];
+    const thick = (s.name===hi)?6:2;
+    ctx.strokeStyle=color; ctx.lineWidth=thick; ctx.beginPath();
+    ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+s.arr.forEach((v,i)=>{const xx=x(i),yy=y(v); if(i===0)ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);}); ctx.stroke();
+    // line label at end
+    ctx.fillStyle=color; ctx.font="12px system-ui"; ctx.textAlign="left";
+    const lastY = y(s.arr[s.arr.length-1]);
+    ctx.fillText(s.name, W-pad.r+6, lastY);
+    // value labels for highlighted
+    if(showLabels && s.name===hi){
+      ctx.fillStyle=color; ctx.font="11px system-ui"; ctx.textAlign="center";
+      s.arr.forEach((v,i)=>{ const xx=x(i), yy=y(v)-6; const txt = (mode==="normalized" ? v.toFixed(2) : Math.round(v).toLocaleString()); ctx.fillText(txt, xx, yy); });
+    }
+  });
+  renderSubsTable(s);
+  // x labels
+  ctx.fillStyle="#5b6470";ctx.textAlign="center";ctx.font="12px system-ui";
+  MONTHS.forEach((lab,i)=>ctx.fillText(lab,x(i),H-14));
+}
+function renderSeasonalityTable(){
+  const mode = document.getElementById("seasonMode").value;
+  const hi = document.getElementById("highlightYear").value;
+  const arr = RAW_SERIES[hi].slice();
+  let display = arr.slice();
+  if(mode==="normalized"){
+    const m = arr.reduce((a,b)=>a+b,0)/arr.length || 1;
+    display = arr.map(v=>v/m);
+  }
+  const tbody = document.querySelector("#yearTable tbody");
+  tbody.innerHTML = "";
+  const tr = document.createElement("tr");
+  const tdYear = document.createElement("td"); tdYear.textContent = hi; tr.appendChild(tdYear);
+  let total = 0, peakVal = -Infinity, peakIdx = 0;
+  display.forEach((v,i)=>{
+    const td = document.createElement("td");
+    td.textContent = (mode==="normalized" ? v.toFixed(2) : Math.round(v).toLocaleString());
+    tr.appendChild(td);
+    total += (mode==="normalized" ? v : arr[i]);
+    if(arr[i] > peakVal){ peakVal = arr[i]; peakIdx = i; }
+  });
+  const tdTotal = document.createElement("td"); tdTotal.textContent = (mode==="normalized" ? "—" : Math.round(total).toLocaleString()); tr.appendChild(tdTotal);
+  const meanRaw = arr.reduce((a,b)=>a+b,0)/arr.length || 0;
+  const tdMean = document.createElement("td"); tdMean.textContent = (mode==="normalized" ? "1.00" : Math.round(meanRaw).toLocaleString()); tr.appendChild(tdMean);
+  const tdPeakM = document.createElement("td"); tdPeakM.textContent = MONTHS[peakIdx]; tr.appendChild(tdPeakM);
+  const tdPeakV = document.createElement("td"); tdPeakV.textContent = Math.round(peakVal).toLocaleString(); tr.appendChild(tdPeakV);
+  tbody.appendChild(tr);
+}
+
+// ===== Init =====
+(function init(){
+  // calc
+  const sel = document.getElementById("seasonalitySelect");
+  const keys = Object.keys(SEASONALITY_MODELS);
+  const def = keys.find(k=>k.toLowerCase().includes("balanced")) || keys[0];
+  keys.forEach(k=>{ const opt=document.createElement("option"); opt.value=k; opt.textContent=k; sel.appendChild(opt); });
+  sel.value = def;
+  document.getElementById("loadsSlider").addEventListener("input",()=>{document.getElementById("loadsInput").value=document.getElementById("loadsSlider").value; runCalc();
+  window.addEventListener('resize', runCalc);});
+  document.getElementById("priceSlider").addEventListener("input",()=>{document.getElementById("priceInput").value=document.getElementById("priceSlider").value; runCalc();
+  window.addEventListener('resize', runCalc);});
+  document.getElementById("loadsInput").addEventListener("input",()=>{document.getElementById("loadsSlider").value=document.getElementById("loadsInput").value; runCalc();
+  window.addEventListener('resize', runCalc);});
+  document.getElementById("priceInput").addEventListener("input",()=>{document.getElementById("priceSlider").value=document.getElementById("priceInput").value; runCalc();
+  window.addEventListener('resize', runCalc);});
+  document.getElementById("seasonalitySelect").addEventListener("change", runCalc);
+  runCalc();
+  window.addEventListener('resize', runCalc);
+  // seasonality controls
+  initSeasonalityControls(); window._seasInit=true;
+  drawSeasonality();
+  renderSeasonalityTable();
+})();
+
+// ===== Subscriber Revenue Calculator =====
+
+// Ensure live updates for Subscriber Revenue tab
+function bindSubsInputs(){
+  const sel=document.getElementById('subsMode'); if(sel){ ['input','change'].forEach(evt=>sel.addEventListener(evt, drawSubs)); }
+  const pairs=[
+    ['kaMrrSlider','kaMrr'],
+    ['kaBookingsSlider','kaBookings'],
+    ['entMrrSlider','entMrr'],
+    ['entBookingsSlider','entBookings'],
+    ['smbMrrSlider','smbMrr'],
+    ['smbBookingsSlider','smbBookings']
+  ];
+  pairs.forEach(([sl,id])=>{
+    const s=document.getElementById(sl), n=document.getElementById(id);
+    if(s&&n){
+      ['input','change'].forEach(evt=>s.addEventListener(evt,()=>{ n.value=s.value; drawSubs(); }));
+      ['input','change'].forEach(evt=>n.addEventListener(evt,()=>{ s.value=n.value; drawSubs(); }));
+    }
+  });
+}
+
+function readSubs(){
+  const val = id => parseFloat(document.getElementById(id).value)||0;
+  return {
+    kaMrr: val('kaMrr'), entMrr: val('entMrr'), smbMrr: val('smbMrr'),
+    kaB: val('kaBookings'), entB: val('entBookings'), smbB: val('smbBookings')
+  };
+}
+
+function buildSubsSeries(){
+  const mode = (document.getElementById('subsMode')||{value:'straight'}).value;
+  const {kaMrr,entMrr,smbMrr,kaB,entB,smbB} = readSubs();
+  const months = MONTHS;
+
+  // multipliers per month
+  const mult = (mode==='straight') ? new Array(12).fill(1)
+    : (mode==='realistic') ? REALISTIC_RAMP
+    : (mode==='rampseason') ? REALISTIC_RAMP.map((v,i)=> v * LOADLINK_SEASONALITY[i])
+    : LOADLINK_SEASONALITY;
+
+  // monthly new bookings per type after multiplier
+  const addKA = mult.map(f=> kaB * f);
+  const addENT= mult.map(f=> entB * f);
+  const addSMB= mult.map(f=> smbB * f);
+
+  // accumulate subscribers and compute revenue per type
+  const subsKA=[], subsENT=[], subsSMB=[];
+  const revKA=[],  revENT=[],  revSMB=[];
+  let accKA=0, accENT=0, accSMB=0;
+  for(let i=0;i<12;i++){
+    accKA += addKA[i];
+    accENT+= addENT[i];
+    accSMB+= addSMB[i];
+    subsKA.push(accKA); subsENT.push(accENT); subsSMB.push(accSMB);
+    revKA.push(accKA * kaMrr); revENT.push(accENT * entMrr); revSMB.push(accSMB * smbMrr);
+  }
+
+  const totalSubs = subsKA.map((v,i)=> v + subsENT[i] + subsSMB[i]);
+  const totalRev  = revKA.map((v,i)=> v + revENT[i] + revSMB[i]);
+  const activeMRR = totalRev.slice();
+  const cumulative=[]; totalRev.reduce((a,v)=>{ const nv=a+v; cumulative.push(nv); return nv; },0);
+
+  // base monthly-new-MR at full rate (for KPI display)
+  const baseMonthlyNewMR = kaMrr*kaB + entMrr*entB + smbMrr*smbB;
+
+  return {months, mult, addKA, addENT, addSMB, subsKA, subsENT, subsSMB, totalSubs, revKA, revENT, revSMB, totalRev, activeMRR, cumulative, monthlyNewMR: baseMonthlyNewMR};
+}
+
+function renderSubsTable(s){
+  const tbody = document.querySelector('#subsTable tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  for(let i=0;i<12;i++){
+    const row = [
+      s.months[i],
+      s.subsKA[i], s.subsENT[i], s.subsSMB[i], s.totalSubs[i],
+      s.revKA[i], s.revENT[i], s.revSMB[i], s.totalRev[i],
+      s.monthlyNewMR, s.activeMRR[i], s.cumulative[i]
+    ];
+    const tr = document.createElement('tr');
+    row.forEach((v,idx)=>{
+      const td=document.createElement('td');
+      if(idx===0){ td.textContent=v; td.style.textAlign='left'; }
+      else if(idx<=4){ td.textContent = Math.round(v).toLocaleString(); }
+      else { td.textContent = '$'+Math.round(v).toLocaleString(); }
+      td.style.textAlign='right';
+      if(idx===0) td.style.textAlign='left';
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  }
+}
+function drawSubs(){
+  const s = buildSubsSeries();
+  // KPIs
+  const totalRevYear = s.cumulative[s.cumulative.length-1];
+  const avgMRR = totalRevYear/12;
+  document.getElementById('subsKpiMR').textContent  = '$'+Math.round(s.monthlyNewMR).toLocaleString();
+  document.getElementById('subsKpiARR').textContent = '$'+Math.round(s.totalRev[s.totalRev.length-1]*12).toLocaleString();
+  document.getElementById('subsKpiTot').textContent = '$'+Math.round(totalRevYear).toLocaleString();
+  document.getElementById('subsKpiEOY').textContent = '$'+Math.round(s.activeMRR[11]).toLocaleString();
+
+  // Chart
+  const canvas = document.getElementById('subsChart'); const ctx = canvas.getContext('2d');
+  const W=canvas.width=canvas.clientWidth||800, H=canvas.height=canvas.clientHeight||460;
+  ctx.clearRect(0,0,W,H);
+  const pad={l:60,r:60,t:30,b:36};
+  const x=i=>pad.l+(W-pad.l-pad.r)*i/(s.months.length-1);
+  const maxRev=Math.max(...s.totalRev,1), maxSubs=Math.max(...s.totalSubs,1);
+  const yL=v=>H-pad.b-(H-pad.t-pad.b)*v/(maxRev*1.10);
+  const yR=v=>H-pad.b-(H-pad.t-pad.b)*v/(maxSubs*1.10);
+  ctx.strokeStyle='#e5eaf1'; ctx.strokeRect(pad.l,pad.t,W-pad.l-pad.r,H-pad.t-pad.b);
+  ctx.strokeStyle='#eef2f7'; for(let g=1;g<=4;g++){ const yy=yL(maxRev*1.10*g/5); ctx.beginPath(); ctx.moveTo(pad.l,yy); ctx.lineTo(W-pad.r,yy); ctx.stroke(); }
+
+  const bw=(W-pad.l-pad.r)/s.months.length*0.6;
+  for(let i=0;i<12;i++){
+    const xx=x(i)-bw/2; let baseY=H-pad.b;
+    let h=H-pad.b-yL(s.revSMB[i]); ctx.fillStyle=COLORS.red;  ctx.fillRect(xx, baseY-h, bw, h); baseY-=h;
+    h=H-pad.b-yL(s.revENT[i]);    ctx.fillStyle=COLORS.gold; ctx.fillRect(xx, baseY-h, bw, h); baseY-=h;
+    h=H-pad.b-yL(s.revKA[i]);     ctx.fillStyle=COLORS.blue; ctx.fillRect(xx, baseY-h, bw, h);
+    // total value label
+    ctx.fillStyle='#333'; ctx.font='11px system-ui'; ctx.textAlign='center';
+    ctx.fillText('$'+Math.round(s.totalRev[i]).toLocaleString(), x(i), yL(s.totalRev[i])-6);
+  }
+
+  // subscribers line + labels
+  ctx.strokeStyle='#0b3a45'; ctx.lineWidth=3; ctx.beginPath();
+  s.totalSubs.forEach((v,i)=>{ const xx=x(i), yy=yR(v); if(i===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy); });
+  ctx.stroke();
+  ctx.fillStyle='#0b3a45'; ctx.font='11px system-ui'; ctx.textAlign='left';
+  s.totalSubs.forEach((v,i)=>{ const xx=x(i)+4, yy=yR(v)-6; ctx.fillText(Math.round(v).toLocaleString(), xx, yy); });
+
+  // x labels
+  ctx.fillStyle='#5b6470'; ctx.textAlign='center'; ctx.font='12px system-ui';
+  s.months.forEach((lab,i)=>ctx.fillText(lab, x(i), H-12));
+
+  // table
+  renderSubsTable(s);
+}
+// Bind sliders and inputs (input + change)
+(function(){
+  const pairs=[['kaMrrSlider','kaMrr'],['kaBookingsSlider','kaBookings'],['entMrrSlider','entMrr'],['entBookingsSlider','entBookings'],['smbMrrSlider','smbMrr'],['smbBookingsSlider','smbBookings']];
+  pairs.forEach(([sl,id])=>{
+    const s=document.getElementById(sl), n=document.getElementById(id);
+    function syncAndDraw(src,dst,fn){
+      if(!src) return;
+      ['input','change'].forEach(evt=>src.addEventListener(evt,()=>{ if(dst){ dst.value = src.value; } fn(); }));
+    }
+    if(s&&n){ syncAndDraw(s,n,drawSubs); syncAndDraw(n,s,drawSubs); }
+  });
+})();;
+
+// Bind slider <-> number sync for Subscriber tab
+(function(){
+  const pairs = [
+    ['kaMrrSlider','kaMrr'],['kaBookingsSlider','kaBookings'],
+    ['entMrrSlider','entMrr'],['entBookingsSlider','entBookings'],
+    ['smbMrrSlider','smbMrr'],['smbBookingsSlider','smbBookings']
+  ];
+  pairs.forEach(([sl,id])=>{
+    const s = document.getElementById(sl);
+    const n = document.getElementById(id);
+    function clamp(v,min,max){ v=parseFloat(v)||0; return Math.max(min, Math.min(max, v)); }
+    if(s && n){
+      s.addEventListener('input', ()=>{ n.value = s.value; drawSubs(); });
+      n.addEventListener('input', ()=>{ s.value = n.value; drawSubs(); });
+    }
+  });
+})();
+document.addEventListener('DOMContentLoaded', function(){ try { bindSubsInputs(); drawSubs(); } catch(e){} });
+
+// --- ensure calc-type selector triggers redraw ---
+(function(){
+  const sel = document.getElementById('subsMode');
+  if(sel){
+    ['input','change'].forEach(evt=> sel.addEventListener(evt, drawSubs));
+  }
+})();
+
+</script>
+</body>
+</html>
